@@ -143,7 +143,7 @@ const InputSection = memo(({ duration, setDuration, addData }) => {
           />
         </LocalizationProvider>
         <Button
-          variant="outlined"
+          variant="contained"
           color="primary"
           sx={{ width: 'auto', minWidth: 80, whiteSpace: 'nowrap' }}
           onClick={() => {
@@ -167,6 +167,11 @@ const InputSection = memo(({ duration, setDuration, addData }) => {
 });
 
 const Stats = memo(({ data, duration, removeData }) => {
+  const capitalizeFirst = (text) =>
+    typeof text === 'string' && text.length > 0
+      ? text.charAt(0).toUpperCase() + text.slice(1)
+      : text;
+
   const sortedDataAsc = [...data].sort(
     (a, b) => moment(a).valueOf() - moment(b).valueOf()
   );
@@ -222,13 +227,13 @@ const Stats = memo(({ data, duration, removeData }) => {
       icon: <ScheduleIcon fontSize="small" />,
     },
     {
-      title: 'current streak (days)',
-      value: String(currentStreakDays),
+      title: 'current streak',
+      value: `${String(currentStreakDays)} Days`,
       icon: <UpgradeIcon fontSize="small" />,
     },
     {
-      title: 'best streak (days)',
-      value: String(bestStreakDays),
+      title: 'best streak',
+      value: `${String(bestStreakDays)} Days`,
       icon: <DownloadIcon fontSize="small" />,
     },
     {
@@ -249,7 +254,11 @@ const Stats = memo(({ data, duration, removeData }) => {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
         <Typography variant="caption" color="text.secondary">
-          Stats are shown in {duration}. Streak is in days.
+          Stats are shown in{' '}
+          <Box component="span" sx={{ fontWeight: 700 }}>
+            {duration}
+          </Box>
+          .
         </Typography>
 
         <Box
@@ -281,7 +290,7 @@ const Stats = memo(({ data, duration, removeData }) => {
                     mt: 0.75,
                   }}
                 >
-                  {icon} {title}
+                  {icon} {capitalizeFirst(title)}
                 </Typography>
               </CardContent>
             </Card>
