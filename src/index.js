@@ -4,26 +4,64 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 const theme = createTheme({
   palette: {
+    mode: 'light',
     primary: {
-      main: '#357a38',
+      main: '#2F3B52',
+      contrastText: '#FFFFFF',
     },
     secondary: {
-      main: '#ffcf33',
+      main: '#D4A106',
+      contrastText: '#1A1D1F',
+    },
+    background: {
+      default: '#F6F7FB',
+      paper: '#FFFFFF',
     },
   },
   typography: {
     fontFamily: ['"SUSE"', '"sans-serif"'].join(','),
+  },
+  shape: {
+    borderRadius: 12,
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          color: '#1A1D1F',
+        },
+      },
+    },
+    MuiButton: {
+      defaultProps: {
+        disableElevation: true,
+      },
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+        },
+      },
+    },
   },
 });
 
 root.render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
+      <CssBaseline />
       <App />
     </ThemeProvider>
   </React.StrictMode>

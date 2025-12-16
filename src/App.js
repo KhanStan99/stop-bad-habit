@@ -1,4 +1,4 @@
-import { memo, React, useState, useCallback } from 'react';
+import { memo, useState, useCallback } from 'react';
 import './App.css';
 import dayjs from 'dayjs';
 import moment from 'moment';
@@ -9,17 +9,18 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import Button from '@mui/material/Button';
 import {
   Box,
+  Container,
   Typography,
   AppBar,
+  Toolbar,
   IconButton,
   Card,
-  CardActionArea,
   CardContent,
   FormControlLabel,
-  FormControl,
   RadioGroup,
   Radio,
-  FormLabel,
+  Paper,
+  Stack,
 } from '@mui/material';
 import FunctionsIcon from '@mui/icons-material/Functions';
 import ScheduleIcon from '@mui/icons-material/Schedule';
@@ -56,38 +57,39 @@ const App = memo(() => {
   return (
     <>
       <Header />
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <InputSection
-          duration={duration}
-          setDuration={setDuration}
-          addData={addData}
-        />
-        {data.length > 0 && (
-          <Stats data={data} duration={duration} removeData={removeData} />
-        )}
-      </Box>
+      <Container maxWidth="sm" sx={{ py: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <InputSection
+            duration={duration}
+            setDuration={setDuration}
+            addData={addData}
+          />
+          {data.length > 0 && (
+            <Stats data={data} duration={duration} removeData={removeData} />
+          )}
+        </Box>
+      </Container>
     </>
   );
 });
 
 const Header = memo(() => (
-  <AppBar position="sticky">
-    <Box
-      display="flex"
-      alignItems="center"
-      flexDirection="column"
-      textAlign="center"
-    >
-      <Typography variant="h4">Count Your Bad Habits</Typography>
-      <Typography variant="h6">
-        Track your behavior and improve over time
-      </Typography>
-    </Box>
+  <AppBar
+    position="sticky"
+    color="default"
+    elevation={0}
+    sx={{ borderBottom: 1, borderColor: 'divider' }}
+  >
+    <Toolbar disableGutters>
+      <Container maxWidth="sm">
+        <Box textAlign="center" sx={{ py: 1 }}>
+          <Typography variant="h6">Count Your Bad Habits</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Track your behavior and improve over time
+          </Typography>
+        </Box>
+      </Container>
+    </Toolbar>
   </AppBar>
 ));
 
@@ -95,33 +97,35 @@ const InputSection = memo(({ duration, setDuration, addData }) => {
   const [value, setValue] = useState(dayjs());
 
   return (
-    <Box
-      padding={2}
-      display="flex"
-      flexDirection="column"
-      gap={2}
-      backgroundColor="#afd683"
-      alignItems="center"
-      textAlign={'center'}
-    >
-      <FormControl>
-        <FormLabel>Calculation in:</FormLabel>
+    <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+        justifyContent="center"
+        flexWrap="wrap"
+        sx={{ mb: 2 }}
+      >
+        <Typography variant="body2" color="text.secondary">
+          Calculation in:
+        </Typography>
         <RadioGroup
           row
           value={duration}
           onChange={(e) => setDuration(e.target.value)}
+          aria-label="calculation in"
+          name="calculation-in"
         >
           <FormControlLabel value="days" control={<Radio />} label="Days" />
           <FormControlLabel value="hours" control={<Radio />} label="Hours" />
         </RadioGroup>
-      </FormControl>
+      </Stack>
 
-      <Box
-        display="flex"
-        flexDirection="row"
-        gap={2}
+      <Stack
+        direction="row"
+        spacing={2}
         alignItems="center"
-        textAlign={'center'}
+        justifyContent="center"
       >
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DateTimePicker
@@ -130,10 +134,18 @@ const InputSection = memo(({ duration, setDuration, addData }) => {
             value={value}
             format="DD-MM-YYYY hh:mm:ss a"
             onChange={setValue}
+            slotProps={{
+              textField: {
+                size: 'small',
+                sx: { width: { xs: '100%', sm: 360 } },
+              },
+            }}
           />
         </LocalizationProvider>
         <Button
           variant="outlined"
+          color="primary"
+          sx={{ width: 'auto', minWidth: 80, whiteSpace: 'nowrap' }}
           onClick={() => {
             setValue(dayjs());
             addData(value);
@@ -141,20 +153,29 @@ const InputSection = memo(({ duration, setDuration, addData }) => {
         >
           Add Now 😔
         </Button>
-      </Box>
-    </Box>
+      </Stack>
+
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ display: 'block', mt: 1.5 }}
+      >
+        The goal is to not add anything—build your streak.
+      </Typography>
+    </Paper>
   );
 });
 
 const Stats = memo(({ data, duration, removeData }) => {
-  const sortedData = [...data].sort(
+  const sortedDataAsc = [...data].sort(
     (a, b) => moment(a).valueOf() - moment(b).valueOf()
   );
+  const sortedDataDesc = [...sortedDataAsc].reverse();
   const timeDifferences = [];
 
-  for (let i = 1; i < sortedData.length; i++) {
-    const prevDate = moment(sortedData[i - 1]);
-    const currentDate = moment(sortedData[i]);
+  for (let i = 1; i < sortedDataAsc.length; i++) {
+    const prevDate = moment(sortedDataAsc[i - 1]);
+    const currentDate = moment(sortedDataAsc[i]);
     const diff = moment.duration(currentDate.diff(prevDate));
     timeDifferences.push(diff.as(duration));
   }
@@ -162,128 +183,169 @@ const Stats = memo(({ data, duration, removeData }) => {
   const averageTimeBetweenHabits =
     timeDifferences.reduce((sum, diff) => sum + diff, 0) /
     (timeDifferences.length || 1);
-  const firstLogged = moment().diff(moment(sortedData[0]), duration, true);
+  const firstLogged = moment().diff(moment(sortedDataAsc[0]), duration, true);
 
-  const lastLogged = sortedData[sortedData.length - 1];
+  const lastLogged = sortedDataAsc[sortedDataAsc.length - 1];
   const timeSinceLastLogged = moment().diff(moment(lastLogged), duration, true);
 
-  const totalLogs = sortedData.length;
+  const currentStreakDays = Math.max(
+    0,
+    Math.floor(moment().diff(moment(lastLogged), 'days', true))
+  );
+  const bestStreakDays = Math.max(
+    currentStreakDays,
+    ...sortedDataAsc
+      .slice(1)
+      .map((t, i) =>
+        Math.max(0, Math.floor(moment(t).diff(moment(sortedDataAsc[i]), 'days', true)))
+      )
+  );
+
+  const totalLogs = sortedDataAsc.length;
   const uniqueDates = new Set(
-    sortedData.map((date) => moment(date).format('YYYY-MM-DD'))
+    sortedDataAsc.map((date) => moment(date).format('YYYY-MM-DD'))
   );
   const daysWithEntries = uniqueDates.size;
 
-  const longestGap = Math.max(...timeDifferences);
+  const longestGap = timeDifferences.length ? Math.max(...timeDifferences) : 0;
 
   const result = [
     {
       title: 'average',
       value: averageTimeBetweenHabits.toFixed(2),
-      icon: <FunctionsIcon />,
+      icon: <FunctionsIcon fontSize="small" />,
     },
+    { title: 'total entries', value: totalLogs, icon: <RouteIcon fontSize="small" /> },
     {
       title: 'since last entry',
       value: timeSinceLastLogged.toFixed(2),
-      icon: <ScheduleIcon />,
+      icon: <ScheduleIcon fontSize="small" />,
+    },
+    {
+      title: 'current streak (days)',
+      value: String(currentStreakDays),
+      icon: <UpgradeIcon fontSize="small" />,
+    },
+    {
+      title: 'best streak (days)',
+      value: String(bestStreakDays),
+      icon: <DownloadIcon fontSize="small" />,
     },
     {
       title: 'since first entry',
       value: firstLogged.toFixed(2),
-      icon: <UpgradeIcon />,
+      icon: <UpgradeIcon fontSize="small" />,
     },
     {
       title: 'longest gap',
       value: longestGap.toFixed(2),
-      icon: <DownloadIcon />,
+      icon: <DownloadIcon fontSize="small" />,
     },
-    { title: 'total entries', value: totalLogs, icon: <RouteIcon /> },
-    { title: 'unique days', value: daysWithEntries, icon: <EventIcon /> },
+
+    { title: 'unique days', value: daysWithEntries, icon: <EventIcon fontSize="small" /> },
   ];
 
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      padding={1}
-      gap={2}
-      textAlign="center"
-    >
-      <Typography variant="h4">Stats</Typography>
-      <Typography variant="h5">in "{duration}"</Typography>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
+        <Typography variant="caption" color="text.secondary">
+          Stats are shown in {duration}. Streak is in days.
+        </Typography>
 
-      <Box
-        display="flex"
-        flexDirection="row"
-        flexWrap="wrap"
-        gap={2}
-        justifyContent="center"
-      >
-        {result.map(({ title, value, icon }) => (
-          <Card display="flex" sx={{ textAlign: 'center' }} key={title}>
-            <CardActionArea>
-              <CardContent>
-                <Typography gutterBottom variant="h5">
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' },
+            gap: 1.5,
+            mt: 1,
+          }}
+        >
+          {result.map(({ title, value, icon }) => (
+            <Card
+              variant="outlined"
+              key={title}
+              sx={{ textAlign: 'center', width: '100%' }}
+            >
+              <CardContent sx={{ p: 1.25, '&:last-child': { pb: 1.25 } }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.15 }}>
                   {value}
                 </Typography>
                 <Typography
-                  variant="body2"
-                  gap={1}
-                  sx={{ display: 'flex', alignItems: 'center' }}
+                  variant="caption"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 0.75,
+                    color: 'text.secondary',
+                    mt: 0.75,
+                  }}
                 >
                   {icon} {title}
                 </Typography>
               </CardContent>
-            </CardActionArea>
-          </Card>
-        ))}
-      </Box>
+            </Card>
+          ))}
+        </Box>
+      </Paper>
 
-      <Typography variant="h4">History</Typography>
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography variant="h4" textAlign="center" sx={{ mb: 2 }}>
+          History
+        </Typography>
 
-      <Box display="flex" flexDirection="column" gap={2}>
-        {data.map((time, index) => {
-          let afterTime = '';
-          if (index >= 1) {
-            const diff = moment(data[index]).diff(
-              moment(data[index - 1]),
-              'milliseconds'
-            );
-            afterTime = moment.duration(diff).as(duration).toFixed(2);
-          }
-          return (
-            <Box
-              key={index}
-              display="flex"
-              flexDirection="row"
-              justifyContent="space-between"
-              textAlign="center"
-              alignItems="center"
-              gap={2}
-              sx={{
-                borderRadius: '12px',
-                border: '1px solid #000',
-                padding: '12px',
-              }}
-            >
-              <Box>
-                {index > 0 && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {sortedDataDesc.map((time, index) => {
+            const originalIndex = data.findIndex((d) => d === time);
+            let afterTime = '';
+
+            if (index < sortedDataDesc.length - 1) {
+              const diff = moment(time).diff(
+                moment(sortedDataDesc[index + 1]),
+                'milliseconds'
+              );
+              afterTime = moment.duration(Math.abs(diff)).as(duration).toFixed(2);
+            }
+
+            return (
+              <Paper
+                key={`${time}-${index}`}
+                variant="outlined"
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 2,
+                }}
+              >
+                <Box>
+                  {index < sortedDataDesc.length - 1 && (
+                    <Typography variant="body2" color="text.secondary">
+                      Gap {`${afterTime} ${duration}`}
+                    </Typography>
+                  )}
+
                   <Typography variant="body2">
-                    After {`${afterTime} ${duration}`}
+                    {moment(time).format('DD-MM-YYYY | hh:mm:ss a')}
                   </Typography>
-                )}
+                </Box>
 
-                <Typography variant="body2">
-                  {moment(time).format('DD-MM-YYYY | hh:mm:ss a')}
-                </Typography>
-              </Box>
-
-              <IconButton variant="contained" onClick={() => removeData(index)}>
-                <DeleteForeverIcon />
-              </IconButton>
-            </Box>
-          );
-        })}
-      </Box>
+                <IconButton
+                  aria-label="delete entry"
+                  color="error"
+                  onClick={() => {
+                    if (originalIndex >= 0) removeData(originalIndex);
+                  }}
+                >
+                  <DeleteForeverIcon />
+                </IconButton>
+              </Paper>
+            );
+          })}
+        </Box>
+      </Paper>
     </Box>
   );
 });
