@@ -1,4 +1,4 @@
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useCallback, useRef } from 'react';
 import './App.css';
 import dayjs from 'dayjs';
 import moment from 'moment';
@@ -16,6 +16,10 @@ import {
   IconButton,
   Card,
   CardContent,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
   FormControlLabel,
   RadioGroup,
   Radio,
@@ -28,6 +32,9 @@ import UpgradeIcon from '@mui/icons-material/Upgrade';
 import DownloadIcon from '@mui/icons-material/Download';
 import EventIcon from '@mui/icons-material/Event';
 import RouteIcon from '@mui/icons-material/Route';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 
 const App = memo(() => {
   const [duration, setDuration] = useState('days');
@@ -35,6 +42,37 @@ const App = memo(() => {
     const localData = localStorage.getItem('my_data');
     return localData ? JSON.parse(localData) : [];
   });
+
+  const exportData = useCallback(() => {
+    const payload = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      data,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bad-habits-export-${dayjs().format('YYYY-MM-DD')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, [data]);
+
+  const importData = useCallback((fileText) => {
+    const parsed = JSON.parse(fileText);
+    const imported = Array.isArray(parsed) ? parsed : parsed?.data;
+
+    if (!Array.isArray(imported)) {
+      throw new Error('Invalid import format');
+    }
+
+    localStorage.setItem('my_data', JSON.stringify(imported));
+    setData(imported);
+  }, []);
 
   const addData = useCallback(
     (value) => {
@@ -56,7 +94,7 @@ const App = memo(() => {
 
   return (
     <>
-      <Header />
+      <Header exportData={exportData} importData={importData} />
       <Container maxWidth="sm" sx={{ py: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <InputSection
@@ -73,25 +111,97 @@ const App = memo(() => {
   );
 });
 
-const Header = memo(() => (
-  <AppBar
-    position="sticky"
-    color="default"
-    elevation={0}
-    sx={{ borderBottom: 1, borderColor: 'divider' }}
-  >
-    <Toolbar disableGutters>
-      <Container maxWidth="sm">
-        <Box textAlign="center" sx={{ py: 1 }}>
-          <Typography variant="h6">Count Your Bad Habits</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Track your behavior and improve over time
-          </Typography>
-        </Box>
-      </Container>
-    </Toolbar>
-  </AppBar>
-));
+const Header = memo(({ exportData, importData }) => {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const open = Boolean(anchorEl);
+  const handleOpenMenu = (e) => setAnchorEl(e.currentTarget);
+  const handleCloseMenu = () => setAnchorEl(null);
+
+  const handleImportClick = () => {
+    handleCloseMenu();
+    fileInputRef.current?.click();
+  };
+
+  return (
+    <>
+      <AppBar
+        position="sticky"
+        color="default"
+        elevation={0}
+        sx={{ borderBottom: 1, borderColor: 'divider' }}
+      >
+        <Toolbar disableGutters>
+          <Container maxWidth="sm">
+            <Box sx={{ position: 'relative', py: 1 }}>
+              <Box textAlign="center">
+                <Typography variant="h6">Count Your Bad Habits</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Track your behavior and improve over time
+                </Typography>
+              </Box>
+
+              <IconButton
+                aria-label="menu"
+                onClick={handleOpenMenu}
+                sx={{
+                  position: 'absolute',
+                  right: 0,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                }}
+              >
+                <MoreVertIcon />
+              </IconButton>
+            </Box>
+          </Container>
+        </Toolbar>
+      </AppBar>
+
+      <Menu anchorEl={anchorEl} open={open} onClose={handleCloseMenu}>
+        <MenuItem
+          onClick={() => {
+            handleCloseMenu();
+            exportData();
+          }}
+        >
+          <ListItemIcon>
+            <FileDownloadOutlinedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Export JSON</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleImportClick}>
+          <ListItemIcon>
+            <FileUploadOutlinedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Import JSON (replace)</ListItemText>
+        </MenuItem>
+      </Menu>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = '';
+          if (!file) return;
+
+          file
+            .text()
+            .then((text) => {
+              importData(text);
+            })
+            .catch(() => {
+              window.alert('Could not read file');
+            });
+        }}
+      />
+    </>
+  );
+});
 
 const InputSection = memo(({ duration, setDuration, addData }) => {
   const [value, setValue] = useState(dayjs());
