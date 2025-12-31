@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useRef } from 'react';
+import { memo, useState, useCallback, useRef, useMemo } from 'react';
 import './App.css';
 import dayjs from 'dayjs';
 import moment from 'moment';
@@ -277,52 +277,90 @@ const InputSection = memo(({ duration, setDuration, addData }) => {
 });
 
 const Stats = memo(({ data, duration, removeData }) => {
+  const now = moment();
+
   const capitalizeFirst = (text) =>
     typeof text === 'string' && text.length > 0
       ? text.charAt(0).toUpperCase() + text.slice(1)
       : text;
 
-  const sortedDataAsc = [...data].sort(
-    (a, b) => moment(a).valueOf() - moment(b).valueOf()
+  const {
+    sortedDataAsc,
+    sortedDataDesc,
+    timeDifferences,
+    averageTimeBetweenHabits,
+    lastLogged,
+    daysWithEntries,
+    longestGap,
+    totalLogs,
+  } = useMemo(() => {
+    const sortedDataAsc = [...data].sort(
+      (a, b) => moment(a).valueOf() - moment(b).valueOf()
+    );
+    const sortedDataDesc = [...sortedDataAsc].reverse();
+    const timeDifferences = [];
+
+    for (let i = 1; i < sortedDataAsc.length; i++) {
+      const prevDate = moment(sortedDataAsc[i - 1]);
+      const currentDate = moment(sortedDataAsc[i]);
+      const diff = moment.duration(currentDate.diff(prevDate));
+      timeDifferences.push(diff.as(duration));
+    }
+
+    const averageTimeBetweenHabits =
+      timeDifferences.reduce((sum, diff) => sum + diff, 0) /
+      (timeDifferences.length || 1);
+
+    const lastLogged = sortedDataAsc[sortedDataAsc.length - 1];
+
+    const uniqueDates = new Set(
+      sortedDataAsc.map((date) => moment(date).format('YYYY-MM-DD'))
+    );
+
+    return {
+      sortedDataAsc,
+      sortedDataDesc,
+      timeDifferences,
+      averageTimeBetweenHabits,
+      lastLogged,
+      daysWithEntries: uniqueDates.size,
+      longestGap: timeDifferences.length ? Math.max(...timeDifferences) : 0,
+      totalLogs: sortedDataAsc.length,
+    };
+  }, [data, duration]);
+
+  const timeSinceLastLogged = moment(now).diff(
+    moment(lastLogged),
+    duration,
+    true
   );
-  const sortedDataDesc = [...sortedDataAsc].reverse();
-  const timeDifferences = [];
-
-  for (let i = 1; i < sortedDataAsc.length; i++) {
-    const prevDate = moment(sortedDataAsc[i - 1]);
-    const currentDate = moment(sortedDataAsc[i]);
-    const diff = moment.duration(currentDate.diff(prevDate));
-    timeDifferences.push(diff.as(duration));
-  }
-
-  const averageTimeBetweenHabits =
-    timeDifferences.reduce((sum, diff) => sum + diff, 0) /
-    (timeDifferences.length || 1);
-  const firstLogged = moment().diff(moment(sortedDataAsc[0]), duration, true);
-
-  const lastLogged = sortedDataAsc[sortedDataAsc.length - 1];
-  const timeSinceLastLogged = moment().diff(moment(lastLogged), duration, true);
+  const firstLogged = moment(now).diff(
+    moment(sortedDataAsc[0]),
+    duration,
+    true
+  );
 
   const currentStreakDays = Math.max(
     0,
-    Math.floor(moment().diff(moment(lastLogged), 'days', true))
+    Math.floor(moment(now).diff(moment(lastLogged), 'days', true))
   );
+
   const bestStreakDays = Math.max(
     currentStreakDays,
     ...sortedDataAsc
       .slice(1)
       .map((t, i) =>
-        Math.max(0, Math.floor(moment(t).diff(moment(sortedDataAsc[i]), 'days', true)))
+        Math.max(
+          0,
+          Math.floor(moment(t).diff(moment(sortedDataAsc[i]), 'days', true))
+        )
       )
   );
 
-  const totalLogs = sortedDataAsc.length;
-  const uniqueDates = new Set(
-    sortedDataAsc.map((date) => moment(date).format('YYYY-MM-DD'))
-  );
-  const daysWithEntries = uniqueDates.size;
-
-  const longestGap = timeDifferences.length ? Math.max(...timeDifferences) : 0;
+  const liveAverage =
+    (timeDifferences.reduce((sum, diff) => sum + diff, 0) +
+      timeSinceLastLogged) /
+    (timeDifferences.length + 1);
 
   const result = [
     {
@@ -330,7 +368,16 @@ const Stats = memo(({ data, duration, removeData }) => {
       value: averageTimeBetweenHabits.toFixed(2),
       icon: <FunctionsIcon fontSize="small" />,
     },
-    { title: 'total entries', value: totalLogs, icon: <RouteIcon fontSize="small" /> },
+    {
+      title: 'live average',
+      value: liveAverage.toFixed(2),
+      icon: <FunctionsIcon fontSize="small" />,
+    },
+    {
+      title: 'total entries',
+      value: totalLogs,
+      icon: <RouteIcon fontSize="small" />,
+    },
     {
       title: 'since last entry',
       value: timeSinceLastLogged.toFixed(2),
@@ -357,7 +404,11 @@ const Stats = memo(({ data, duration, removeData }) => {
       icon: <DownloadIcon fontSize="small" />,
     },
 
-    { title: 'unique days', value: daysWithEntries, icon: <EventIcon fontSize="small" /> },
+    {
+      title: 'unique days',
+      value: daysWithEntries,
+      icon: <EventIcon fontSize="small" />,
+    },
   ];
 
   return (
@@ -383,10 +434,28 @@ const Stats = memo(({ data, duration, removeData }) => {
             <Card
               variant="outlined"
               key={title}
-              sx={{ textAlign: 'center', width: '100%' }}
+              sx={{
+                textAlign: 'center',
+                width: '100%',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: 4,
+                  borderColor: 'primary.main',
+                  bgcolor: 'action.hover',
+                },
+                '&:active': {
+                  transform: 'scale(0.98)',
+                  boxShadow: 2,
+                },
+              }}
             >
               <CardContent sx={{ p: 1.25, '&:last-child': { pb: 1.25 } }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.15 }}>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 700, lineHeight: 1.15 }}
+                >
                   {value}
                 </Typography>
                 <Typography
@@ -423,7 +492,10 @@ const Stats = memo(({ data, duration, removeData }) => {
                 moment(sortedDataDesc[index + 1]),
                 'milliseconds'
               );
-              afterTime = moment.duration(Math.abs(diff)).as(duration).toFixed(2);
+              afterTime = moment
+                .duration(Math.abs(diff))
+                .as(duration)
+                .toFixed(2);
             }
 
             return (
