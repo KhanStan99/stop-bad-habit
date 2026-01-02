@@ -7,7 +7,7 @@ export default defineConfig({
         react(),
         VitePWA({
             registerType: 'autoUpdate',
-            includeAssets: ['favicon.ico', 'logo192.png', 'logo512.png'],
+            includeAssets: ['logo64.png', 'logo192.png', 'logo512.png'],
             manifest: {
                 short_name: 'Bad Habits',
                 name: 'Cut down your bad habits!',
