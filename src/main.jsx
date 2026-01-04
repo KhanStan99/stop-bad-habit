@@ -29,32 +29,6 @@ const theme = createTheme({
   shape: {
     borderRadius: 12,
   },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        body: {
-          color: '#1A1D1F',
-        },
-      },
-    },
-    MuiButton: {
-      defaultProps: {
-        disableElevation: true,
-      },
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-        },
-      },
-    },
-    MuiAppBar: {
-      styleOverrides: {
-        root: {
-          backgroundImage: 'none',
-        },
-      },
-    },
-  },
 });
 
 root.render(

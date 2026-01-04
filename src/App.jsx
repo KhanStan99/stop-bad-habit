@@ -1,5 +1,4 @@
 import { memo, useState, useCallback, useRef, useMemo } from 'react';
-import './App.css';
 import dayjs from 'dayjs';
 import moment from 'moment';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -128,7 +127,7 @@ const Header = memo(({ exportData, importData }) => {
     <>
       <AppBar
         position="sticky"
-        color="default"
+        color="primary"
         elevation={0}
         sx={{ borderBottom: 1, borderColor: 'divider' }}
       >
@@ -137,13 +136,14 @@ const Header = memo(({ exportData, importData }) => {
             <Box sx={{ position: 'relative', py: 1 }}>
               <Box textAlign="center">
                 <Typography variant="h6">Count Your Bad Habits</Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2">
                   Track your behavior and improve over time
                 </Typography>
               </Box>
 
               <IconButton
                 aria-label="menu"
+                color="secondary"
                 onClick={handleOpenMenu}
                 sx={{
                   position: 'absolute',
@@ -254,7 +254,7 @@ const InputSection = memo(({ duration, setDuration, addData }) => {
         </LocalizationProvider>
         <Button
           variant="contained"
-          color="primary"
+          color="secondary"
           sx={{ width: 'auto', minWidth: 80, whiteSpace: 'nowrap' }}
           onClick={() => {
             setValue(dayjs());
@@ -439,6 +439,8 @@ const Stats = memo(({ data, duration, removeData }) => {
                 width: '100%',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease-in-out',
+                borderColor: 'secondary.main',
+                bgcolor: 'action.hover',
                 '&:hover': {
                   transform: 'translateY(-4px)',
                   boxShadow: 4,
