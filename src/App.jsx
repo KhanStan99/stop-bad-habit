@@ -340,6 +340,12 @@ const Stats = memo(({ data, duration, removeData }) => {
     true
   );
 
+  const firstLoggedInDays = moment(now).diff(
+    moment(sortedDataAsc[0]),
+    'days',
+    true
+  );
+
   const currentStreakDays = Math.max(
     0,
     Math.floor(moment(now).diff(moment(lastLogged), 'days', true))
@@ -374,30 +380,16 @@ const Stats = memo(({ data, duration, removeData }) => {
       icon: <FunctionsIcon fontSize="small" />,
     },
     {
-      title: 'total entries',
-      value: totalLogs,
-      icon: <RouteIcon fontSize="small" />,
-    },
-    {
-      title: 'since last entry',
-      value: timeSinceLastLogged.toFixed(2),
-      icon: <ScheduleIcon fontSize="small" />,
-    },
-    {
-      title: 'current streak',
+      title: `current streak 🔥 - best ${bestStreakDays}`,
       value: `${String(currentStreakDays)} Days`,
       icon: <UpgradeIcon fontSize="small" />,
     },
     {
-      title: 'best streak',
-      value: `${String(bestStreakDays)} Days`,
-      icon: <DownloadIcon fontSize="small" />,
+      title: `last entry ${duration} ago`,
+      value: timeSinceLastLogged.toFixed(2),
+      icon: <ScheduleIcon fontSize="small" />,
     },
-    {
-      title: 'since first entry',
-      value: firstLogged.toFixed(2),
-      icon: <UpgradeIcon fontSize="small" />,
-    },
+
     {
       title: 'longest gap',
       value: longestGap.toFixed(2),
@@ -405,7 +397,7 @@ const Stats = memo(({ data, duration, removeData }) => {
     },
 
     {
-      title: 'unique days',
+      title: `unique days in ${firstLoggedInDays.toFixed(2)} days`,
       value: daysWithEntries,
       icon: <EventIcon fontSize="small" />,
     },
@@ -413,13 +405,12 @@ const Stats = memo(({ data, duration, removeData }) => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
+      <Paper variant="outlined" sx={{ p: 2, textAlign: 'center', gap: 8 }}>
         <Typography variant="caption" color="text.secondary">
           Stats are shown in{' '}
           <Box component="span" sx={{ fontWeight: 700 }}>
             {duration}
           </Box>
-          .
         </Typography>
 
         <Box
@@ -428,6 +419,7 @@ const Stats = memo(({ data, duration, removeData }) => {
             gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' },
             gap: 1.5,
             mt: 1,
+            marginBottom: 2,
           }}
         >
           {result.map(({ title, value, icon }) => (
@@ -475,6 +467,43 @@ const Stats = memo(({ data, duration, removeData }) => {
             </Card>
           ))}
         </Box>
+
+        <Card
+          variant="outlined"
+          sx={{
+            textAlign: 'center',
+            width: '100%',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: 4,
+              borderColor: 'primary.main',
+              bgcolor: 'action.hover',
+            },
+            '&:active': {
+              transform: 'scale(0.98)',
+              boxShadow: 2,
+            },
+          }}
+        >
+          <CardContent>
+            <Typography
+              variant="caption"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 0.75,
+                color: 'text.secondary',
+                mt: 0.75,
+              }}
+            >
+              <strong>{totalLogs}</strong> entries in last{' '}
+              <strong>{firstLogged.toFixed(2)}</strong> {duration}.
+            </Typography>
+          </CardContent>
+        </Card>
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 2 }}>
